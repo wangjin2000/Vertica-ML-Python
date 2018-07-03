@@ -47,7 +47,7 @@ from vertica_ml_python.fun import isnotebook
 from vertica_ml_python.fun import run_query
 from vertica_ml_python.fun import column_matrix
 
-import pandas as pd
+
 
 # Drop Table if it exists
 def drop_table(input_relation,cursor,print_info=True):
@@ -686,6 +686,7 @@ class RVD:
 	# 
 	# add a new RVC to the rvd
 	def to_pandas(self,limit=30,table_info=True):
+		import pandas as pd
 		query="select * from {} limit {}".format(self._table_transf_(),limit)
 		self._display_query_(query)
 		start_time = time.time()

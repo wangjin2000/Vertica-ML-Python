@@ -32,7 +32,7 @@
 ######################
 
 # Libraries
-import pandas as pd
+
 import numpy as np
 import os
 import math
@@ -220,7 +220,7 @@ def run_query(query,cursor,limit=1000,pandas_rtn=False,table_name=None):
 		if pandas_rtn:
 			#return pd.DataFrame(row_matrix)
 			#print("The value of row_matrix is {}".format(row_matrix))
-			
+			import pandas as pd
 			df=pd.DataFrame(row_matrix_data)
 			df.columns = row_matrix_column_names
 			return df
