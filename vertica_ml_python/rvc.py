@@ -187,8 +187,10 @@ class RVC:
 			raise Exception("The best hist interval can only be computed with numerical RVC or dates")
 	# Return the RVC category and the type
 	def _cat_type_(self):
-		query="select data_type from columns where table_name='{}' and column_name='{}';".format(
+    	#Modifed by RDS
+		query="select data_type from columns where table_name='{}' and lower(column_name)='{}';".format(
 			self.parent.input_relation,self.alias)
+		#print(query)
 		self.parent.cursor.execute(query)
 		query_result=self.parent.cursor.fetchall()
 		if not(query_result==[]):
@@ -212,7 +214,8 @@ class RVC:
 		if (method=="mean"):
 			method="avg"
 		if ((method in ["avg","min","max","sum"]) and (type(of)==str)):
-			if (of in self.parent.columns):
+    		#Ignore Case Modification
+			if (of.lower() in self.parent.columns):
 				aggregate="{}({})".format(method,of)
 				of=[of]
 				others_aggregate=method
@@ -509,7 +512,8 @@ class RVC:
 			try:
 				if (self.alias==by):
 					raise Exception("The RVC and the groupby RVC can not be the same")
-				elif (by not in self.parent.columns):
+				#Ignore Case Modification
+				elif (by.lower() not in self.parent.columns):
 					raise Exception("None RVC named '"+by+"' found")
 				count=self.parent.count()
 				cardinality=self.parent[by].cardinality()
@@ -1005,6 +1009,8 @@ class RVC:
 		new_rvc=RVC(name,parent=self.parent)
 		new_rvc.transformations=self.transformations
 		setattr(self.parent,name,new_rvc)
+		# Ignore Case Modification
+		name = name.lower()
 		self.parent.columns+=[name]
 		if (print_info):
 			print("The RVC '{}' was added to the RVD.".format(name))
@@ -1027,6 +1033,8 @@ class RVC:
 			self.parent.rvd_history+=["{"+time.strftime("%c")+"} "+"[Exp]: The RVC '{}' was transformed with the function 'exp'.".format(self.alias)]
 	# Impute missing values
 	def fillna(self,val=None,method=None,by=[],compute_before=True):
+    	#Ignore Case Modification
+		by = [x.lower() for x in by]
 		if not(isinstance(compute_before,bool)):
 			raise TypeError("The parameter 'compute_before' must be a bool")
 		total=self.count()
@@ -1052,7 +1060,8 @@ class RVC:
 				partition_by=[]
 				columns=self.parent.columns
 				for column in by:
-					if not(column in columns):
+    				#Ignore Case Modification
+					if not(column.lower() in columns):
 						exist=False
 						false_column=column
 						break
@@ -1068,7 +1077,8 @@ class RVC:
 				order_by=[]
 				columns=self.parent.columns
 				for column in by:
-					if not(column in columns):
+    				#Ignore Case Modification
+					if not(column.lower() in columns):
 						exist=False
 						false_column=column
 				if exist:
@@ -1247,7 +1257,8 @@ class RVC:
 		return mean
 	# Use a mean encode according to a response column
 	def mean_encode(self,response_column):
-		if (response_column not in self.parent.columns):
+    	#Modifed by RDS
+		if (response_column.lower() not in self.parent.columns):
 			raise Exception("The response RVC must be inside the parent RVD to use a mean encoding")
 		elif (self.parent[response_column].category() not in ["int","float"]):
 			raise Exception("The response RVC must be numerical to use a mean encoding")
@@ -1508,6 +1519,8 @@ class RVC:
 		new_rvc=RVC(new_name,parent=self.parent)
 		new_rvc.transformations=self.transformations
 		setattr(self.parent,new_name,new_rvc)
+		#Ignore Case Modification
+		new_name = new_name.lower()
 		self.parent.columns+=[new_name]
 		self.drop_column(add_history=False)
 		self.parent.rvd_history+=["{"+time.strftime("%c")+"} "+"[Rename]: The RVC '{}' was renamed '{}'.".format(

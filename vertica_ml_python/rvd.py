@@ -47,7 +47,7 @@ from vertica_ml_python.fun import isnotebook
 from vertica_ml_python.fun import run_query
 from vertica_ml_python.fun import column_matrix
 
-
+import pandas as pd
 
 # Drop Table if it exists
 def drop_table(input_relation,cursor,print_info=True):
@@ -259,7 +259,8 @@ class RVD:
 		self.cursor=cursor
 		# All the columns of the RVD
 		if (type(columns)!=list):
-			query="select column_name from columns where table_name='{}' and table_schema='{}'".format(self.input_relation,self.schema)
+    		# Ignore Case Modification
+			query="select lower(column_name) as column_name from columns where table_name='{}' and table_schema='{}'".format(self.input_relation,self.schema)
 			cursor.execute(query)
 			columns=cursor.fetchall()
 			columns=[str(item) for sublist in columns for item in sublist]
@@ -281,7 +282,8 @@ class RVD:
 			cursor.execute(query)
 			query="create temporary table "+name+" as select * from "+input_relation+" limit 1000"
 			cursor.execute(query)
-			query="select column_name from columns where table_name='"+name+"'"
+			#Ignore Case Modification
+			query="select lower(column_name) as column_name from columns where table_name='"+name+"'"
 			cursor.execute(query)
 			columns=cursor.fetchall()
 			self.columns=[str(item) for sublist in columns for item in sublist]
@@ -324,7 +326,8 @@ class RVD:
 			cursor.execute(query)
 	# Get and Set item
 	def __getitem__(self,index):
-		return getattr(self,index)
+    	# Ignore Case Modification
+		return getattr(self,index.lower())
 	def __setitem__(self,index,val):
 		setattr(self,index,val)
 	# Object Representation
@@ -492,7 +495,8 @@ class RVD:
 				self.__dict__[attr]=correct_colors*5
 		# other attributes
 		else:
-			self.__dict__[attr]=val
+    		#Ignore Case Modification
+			self.__dict__[attr.lower()]=val
 	#
 	########################
 	#                      #
@@ -686,7 +690,6 @@ class RVD:
 	# 
 	# add a new RVC to the rvd
 	def to_pandas(self,limit=30,table_info=True):
-		import pandas as pd
 		query="select * from {} limit {}".format(self._table_transf_(),limit)
 		self._display_query_(query)
 		start_time = time.time()
@@ -721,7 +724,8 @@ class RVD:
 			start_time = time.time()
 			self.cursor.execute(query)
 			self._display_time_(elapsed_time=time.time()-start_time)
-			query="select data_type from columns where column_name='{}' and table_name='{}'".format(
+			#Ignore Case Modification
+			query="select data_type from columns where lower(column_name)='{}' and table_name='{}'".format(
 				alias,name)
 			self._display_query_(query,title="Catch the type of the new feature")
 			start_time = time.time()
@@ -749,6 +753,8 @@ class RVD:
 				category="undefined"
 			new_rvc=RVC(alias,parent=self,first_transformation=(imputation,ctype,category))
 			setattr(self,alias,new_rvc)
+			#Ignore Case Modification
+			alias = alias.lower()
 			self.columns+=[alias]
 			print("The new RVC '{}' was added to the RVD.".format(
 				alias))
@@ -835,7 +841,8 @@ class RVD:
 			if (isinstance(columns,str)):
 				columns=[columns]
 			for item in columns:
-				if not(item in self.columns):
+    			#Ignore Case Modification
+				if not(item.lower() in self.columns):
 					raise Exception("The parameter 'columns' must be a list of different RVD columns")
 		if (type(columns)==str) or (len(columns)==1):
 			return 1
@@ -909,10 +916,12 @@ class RVD:
 			if (isinstance(columns,str)):
 				columns=[columns]
 			for item in columns:
-				if not(item in self.columns):
+    			#Ignore Case Modification
+				if not(item.lower() in self.columns):
 					raise Exception("The parameter 'columns' must be a list of different RVD columns")
 		if (type(columns)==str) or (len(columns)==1):
-			query="select round(corr({},log({}+"+str(epsilon)+")),3) from {}".format(columns[0],columns[0],self._table_transf_())
+    		#Ignore Case Modification
+			query="select round(corr("+columns[0]+",log("+columns[0]+"+"+str(epsilon)+")),3) from "+self._table_transf_()
 			self._display_query_(query,title="Compute the Correlation between the two variables")
 			start_time = time.time()
 			self.cursor.execute(query)
@@ -920,7 +929,8 @@ class RVD:
 			result=self.cursor.fetchone()[0]
 			return result
 		elif (len(columns)==2):
-			query="select round(corr({},log({}+"+str(epsilon)+")),3) from {}".format(columns[0],columns[1],self._table_transf_())
+    		#Ignore Case Modification
+			query="select round(corr("+columns[0]+",log("+columns[1]+"+"+str(epsilon)+")),3) from "+self._table_transf_()
 			self._display_query_(query,title="Compute the Correlation between the two variables")
 			start_time = time.time()
 			self.cursor.execute(query)
@@ -987,7 +997,8 @@ class RVD:
 			columns=self.columns
 		else:
 			for column in columns:
-				if column not in self.columns:
+    			#Ignore Case Modification    			    				
+				if column.lower() not in self.columns:
 					raise TypeError("RVC '"+column+"' doesn't exist")
 		if not(isinstance(include_cardinality,bool)):
 			raise TypeError("The parameter 'include_cardinality' must be a bool")
@@ -1063,7 +1074,8 @@ class RVD:
 			else:
 				columns=[columns]
 		for column in columns:
-			if (column in self.columns):
+    		# Ignore Case Modification
+			if (column.lower() in self.columns):
 				self[column].drop_column()
 			else:
 				print("/!\\ Warning: Column '{}' is not in the RVD.".format(column))
@@ -1206,7 +1218,8 @@ class RVD:
 			raise TypeError("The parameter 'columns' must be exactly of size 2 for drawing the hexbin")
 		if (method=="mean"):
 			method="avg"
-		if ((method in ["avg","min","max","sum"]) and (type(of)==str) and (of in self.columns)):
+		#Modfied by RDS
+		if ((method in ["avg","min","max","sum"]) and (type(of)==str) and (of.lower() in self.columns)):
 			aggregate="{}({})".format(method,of)
 			of=[of]
 			others_aggregate=method
@@ -1422,7 +1435,8 @@ class RVD:
 		if (method=="mean"):
 			method="avg"
 		if ((method in ["avg","min","max","sum"]) and (type(of)==str)):
-			if (of in self.columns):
+    		#Modifed by RDS
+			if (of.lower() in self.columns):
 				aggregate="{}({})".format(method,of)
 				of=[of]
 				others_aggregate=method
@@ -1565,7 +1579,8 @@ class RVD:
 			columns="*"
 		else:
 			for column in columns:
-				if not(column in self.columns):
+    			#Ignore Case Modification
+				if not(column.lower() in self.columns):
 					raise Exception("The RVC '{}' doesn't exist".format(column))
 			columns=",".join(columns)
 		query="create {} {} as select {} from {}".format(mode,name,columns,self._table_transf_())
@@ -1615,7 +1630,8 @@ class RVD:
 			raise Exception("2D Scatter plot can only be done with at least two columns and maximum with three columns")
 		else:
 			for column in columns:
-				if (column not in self.columns):
+    			#Ignore Case Modification
+				if (column.lower() not in self.columns):
 					raise Exception("The RVC '{}' doesn't exist".format(column))
 			if (self[columns[0]].category() not in ["int","float"]) or (self[columns[1]].category() not in ["int","float"]):
 				raise TypeError("The two first value of 'columns' must be numerical")
@@ -1719,14 +1735,17 @@ class RVD:
 		bbox_to_anchor,ncol,loc=self._legend_loc_init_()
 		if (type(columns)!=list):
 			raise TypeError("The parameter 'columns' must be a list of columns")
+			#Ignore Case Modification
 		if ((len(columns)<3) or (len(columns)>4)):
 			raise Exception("3D Scatter plot can only be done with at least two columns and maximum with four columns")
 		else:
 			for column in columns:
-				if (column not in self.columns):
+    			#Ignore Case Modification
+				if (column.lower() not in self.columns):
 					raise Exception("The RVC '{}' doesn't exist".format(column))
 			for i in range(3):
 				if (self[columns[i]].category() not in ["int","float"]):
+					#print("{},{}".format(self[columns[i]].category(),self[columns[i]]))
 					raise TypeError("The three first value of 'columns' must be numerical")
 			if (len(columns)==3):
 				tablesample=max_nb_points/self.count()
@@ -1834,7 +1853,8 @@ class RVD:
 				color=self.colors
 		if not(isinstance(columns,type(None))):
 			for column in columns:
-				if (column not in self.columns):
+    			#Ignore Case Modification
+				if (column.lower() not in self.columns):
 					raise Exception("The RVC '{}' doesn't exist".format(column))
 		if (type(columns)!=list):
 			columns=[]
@@ -1955,7 +1975,8 @@ class RVD:
 			raise TypeError("The parameter 'print_info' must be a bool")
 		if columns!="*":
 			for column in columns:
-				if (column not in self.columns):
+    			#Ignore Case Modification
+				if (column.lower() not in self.columns):
 					raise Exception("The RVC '{}' is not in the RVD".format(column))
 		else:
 			columns=self.columns
